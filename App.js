@@ -212,7 +212,19 @@
 // }
 
 import React, { useState } from 'react';
-import { Box, Typography, Slider, Paper, Grid } from '@mui/material';
+import { Box, Typography, Slider, Paper, Grid, AppBar, Toolbar, createTheme, ThemeProvider } from '@mui/material';
+
+// Create a theme instance.
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#4caf50',
+    },
+    secondary: {
+      main: '#ff9100',
+    },
+  },
+});
 
 function App() {
   const [sensorValues, setSensorValues] = useState({
@@ -226,73 +238,83 @@ function App() {
   };
 
   return (
-    <Box sx={{ flexGrow: 1, padding: 2 }}>
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
-          <Typography variant="h5" gutterBottom>
-            Readings
-          </Typography>
-          <Paper elevation={3} sx={{ padding: 2, marginBottom: 2 }}>
-            <Typography color="textSecondary">Temperature</Typography>
-            <Typography variant="h4">{`${sensorValues.temperature}°C`}</Typography>
-          </Paper>
-          <Paper elevation={3} sx={{ padding: 2, marginBottom: 2 }}>
-            <Typography color="textSecondary">Humidity</Typography>
-            <Typography variant="h4">{`${sensorValues.humidity}%`}</Typography>
-          </Paper>
-          <Paper elevation={3} sx={{ padding: 2, marginBottom: 2 }}>
-            <Typography color="textSecondary">Pressure</Typography>
-            <Typography variant="h4">{`${sensorValues.pressure} hPa`}</Typography>
-          </Paper>
+    <ThemeProvider theme={theme}>
+      <Box sx={{ flexGrow: 1 }}>
+        <AppBar position="static" color="primary" sx={{ alignItems: 'center' }}>
+          <Toolbar>
+            <Typography variant="h3" component="h1" sx={{ flexGrow: 1, textAlign: 'center' }}>
+              Smart Farm
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <Grid container spacing={2} padding={2}>
+          <Grid item xs={12} md={6}>
+            <Typography variant="h5" gutterBottom>
+              Readings
+            </Typography>
+            <Paper elevation={3} sx={{ padding: 2, margin: 1, backgroundColor: '#e8f5e9' }}>
+              <Typography color="textSecondary">Temperature</Typography>
+              <Typography variant="h4">{`${sensorValues.temperature}°C`}</Typography>
+            </Paper>
+            <Paper elevation={3} sx={{ padding: 2, margin: 1, backgroundColor: '#e8f5e9' }}>
+              <Typography color="textSecondary">Humidity</Typography>
+              <Typography variant="h4">{`${sensorValues.humidity}%`}</Typography>
+            </Paper>
+            <Paper elevation={3} sx={{ padding: 2, margin: 1, backgroundColor: '#e8f5e9' }}>
+              <Typography color="textSecondary">Pressure</Typography>
+              <Typography variant="h4">{`${sensorValues.pressure} hPa`}</Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Typography variant="h5" gutterBottom>
+              Controls
+            </Typography>
+            <Box display="flex" flexDirection="column" alignItems="center">
+              <Typography id="temperature-slider" gutterBottom>
+                Temperature: {sensorValues.temperature}°C
+              </Typography>
+              <Slider
+                value={sensorValues.temperature}
+                onChange={(e, val) => handleSliderChange('temperature', val)}
+                aria-labelledby="temperature-slider"
+                valueLabelDisplay="auto"
+                step={1}
+                min={10}
+                max={30}
+              />
+              <Typography id="humidity-slider" gutterBottom>
+                Humidity: {sensorValues.humidity}%
+              </Typography>
+              <Slider
+                value={sensorValues.humidity}
+                onChange={(e, val) => handleSliderChange('humidity', val)}
+                aria-labelledby="humidity-slider"
+                valueLabelDisplay="auto"
+                step={1}
+                min={0}
+                max={100}
+              />
+              <Typography id="pressure-slider" gutterBottom>
+                Pressure: {sensorValues.pressure} hPa
+              </Typography>
+              <Slider
+                value={sensorValues.pressure}
+                onChange={(e, val) => handleSliderChange('pressure', val)}
+                aria-labelledby="pressure-slider"
+                valueLabelDisplay="auto"
+                step={1}
+                min={900}
+                max={1100}
+              />
+            </Box>
+          </Grid>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <Typography variant="h5" gutterBottom>
-            Controls
-          </Typography>
-          <Box display="flex" flexDirection="column" alignItems="center">
-            <Typography id="temperature-slider" gutterBottom>
-              Temperature: {sensorValues.temperature}°C
-            </Typography>
-            <Slider
-              value={sensorValues.temperature}
-              onChange={(e, val) => handleSliderChange('temperature', val)}
-              aria-labelledby="temperature-slider"
-              valueLabelDisplay="auto"
-              step={1}
-              min={10}
-              max={30}
-            />
-            <Typography id="humidity-slider" gutterBottom>
-              Humidity: {sensorValues.humidity}%
-            </Typography>
-            <Slider
-              value={sensorValues.humidity}
-              onChange={(e, val) => handleSliderChange('humidity', val)}
-              aria-labelledby="humidity-slider"
-              valueLabelDisplay="auto"
-              step={1}
-              min={0}
-              max={100}
-            />
-            <Typography id="pressure-slider" gutterBottom>
-              Pressure: {sensorValues.pressure} hPa
-            </Typography>
-            <Slider
-              value={sensorValues.pressure}
-              onChange={(e, val) => handleSliderChange('pressure', val)}
-              aria-labelledby="pressure-slider"
-              valueLabelDisplay="auto"
-              step={1}
-              min={900}
-              max={1100}
-            />
-          </Box>
-        </Grid>
-      </Grid>
-    </Box>
+      </Box>
+    </ThemeProvider>
   );
 }
 
 export default App;
+
 
 
