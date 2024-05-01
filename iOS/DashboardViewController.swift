@@ -278,7 +278,7 @@ class DashboardViewController: UIViewController, BluetoothManagerDelegate {
                     self.didUpdateTemperature(temperature)
                 }
             case CBUUID(string: "2E75A5DD-A42B-420A-B9AB-3F15E19AE0EE"):
-                if let humidity = value.toInt() {
+                if let humidity = value.toUInt32AsInt() {
                     self.didUpdateHumidity(humidity)
                 }
             case CBUUID(string: "2CA77EE6-AFFB-48FD-BA94-2E0745B36A3D"):

@@ -235,6 +235,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     private var reconnectionAttempts = 0
     private let maximumReconnectionAttempts = 50
     private var reconnectionTimer: Timer?
+    var updateTimer: Timer?
     
     private var characteristicsDictionary = [CBUUID: [CBCharacteristic]]()
     private let myServiceUUID = CBUUID(string: "B65E8494-7C3B-4C41-B0A6-E7E08A776AF5") // Change this to your actual service UUID
@@ -242,6 +243,44 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     override init() {
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: nil)
+    }
+    
+    func startRegularRead() {
+        updateTimer = Timer.scheduledTimer(timeInterval: 5.0, target: self, selector: #selector(readCharacteristics), userInfo: nil, repeats: true)
+    }
+    
+    @objc func readCharacteristics() {
+        guard let peripheral = connectedPeripheral else { return }
+        // List of characteristic UUIDs you need to read
+        let characteristicUUIDs = [
+            CBUUID.temperatureCharacteristicUUID,
+            CBUUID.humidityCharacteristicUUID,
+            CBUUID.moistureCharacteristicUUID
+        ]
+        
+        for uuid in characteristicUUIDs {
+            if let characteristic = findCharacteristic(by: uuid) {
+                peripheral.readValue(for: characteristic)
+            }
+        }
+    }
+    
+    func findCharacteristic(by uuid: CBUUID) -> CBCharacteristic? {
+        guard let services = connectedPeripheral?.services else { return nil }
+        for service in services {
+            if let characteristics = service.characteristics {
+                for characteristic in characteristics {
+                    if characteristic.uuid == uuid {
+                        return characteristic
+                    }
+                }
+            }
+        }
+        return nil
+    }
+    
+    func stopTimer() {
+        updateTimer?.invalidate()
     }
 
     func startScanning() {
@@ -349,28 +388,109 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
         }
     }
 
+//    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+//        guard let characteristics = service.characteristics else { return }
+//        for characteristic in characteristics {
+//            switch characteristic.uuid {
+//                case .temperatureCharacteristicUUID:
+//                    peripheral.readValue(for: characteristic) // if it's readable
+//                    if characteristic.properties.contains(.notify) {
+//                        peripheral.setNotifyValue(true, for: characteristic)
+//                    }
+//                case .humidityCharacteristicUUID, .moistureCharacteristicUUID:
+//                    if characteristic.properties.contains(.notify) {
+//                        peripheral.setNotifyValue(true, for: characteristic)
+//                    }
+//                case .controlCharacteristicUUID:
+//                    if characteristic.properties.contains(.write) {
+//                        // Store this characteristic if you need to write to it later
+//                    }
+//                default:
+//                    print("Unhandled Characteristic UUID: \(characteristic.uuid)")
+//            }
+//        }
+//    }
+    
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        guard let characteristics = service.characteristics else { return }
+        guard let characteristics = service.characteristics, error == nil else {
+            print("Error discovering characteristics: \(error?.localizedDescription ?? "unknown error")")
+            return
+        }
+
         for characteristic in characteristics {
-            switch characteristic.uuid {
-                case .temperatureCharacteristicUUID:
-                    peripheral.readValue(for: characteristic) // if it's readable
-                    if characteristic.properties.contains(.notify) {
-                        peripheral.setNotifyValue(true, for: characteristic)
-                    }
-                case .humidityCharacteristicUUID, .moistureCharacteristicUUID:
-                    if characteristic.properties.contains(.notify) {
-                        peripheral.setNotifyValue(true, for: characteristic)
-                    }
-                case .controlCharacteristicUUID:
-                    if characteristic.properties.contains(.write) {
-                        // Store this characteristic if you need to write to it later
-                    }
-                default:
-                    print("Unhandled Characteristic UUID: \(characteristic.uuid)")
+            print("Discovered Characteristic: \(characteristic.uuid)")
+            // Read any readable characteristic initially
+            if characteristic.properties.contains(.read) {
+                peripheral.readValue(for: characteristic)
+            }
+            // Subscribe to notifications if available
+            if characteristic.properties.contains(.notify) {
+                peripheral.setNotifyValue(true, for: characteristic)
+            }
+            // Handle writable characteristics as needed
+            if characteristic.properties.contains(.write) {
+                // This can be used to store reference for future writes
             }
         }
     }
+
+    func startRegularReads() {
+        guard let peripheral = connectedPeripheral else { return }
+        let readInterval = TimeInterval(5) // every 5 seconds
+        Timer.scheduledTimer(withTimeInterval: readInterval, repeats: true) { [weak self] _ in
+            guard let characteristics = self?.getReadableCharacteristics() else { return }
+            for characteristic in characteristics {
+                peripheral.readValue(for: characteristic)
+            }
+        }
+    }
+
+    func getReadableCharacteristics() -> [CBCharacteristic]? {
+        guard let services = connectedPeripheral?.services else { return nil }
+        var readableCharacteristics = [CBCharacteristic]()
+        for service in services {
+            if let characteristics = service.characteristics {
+                for characteristic in characteristics where characteristic.properties.contains(.read) {
+                    readableCharacteristics.append(characteristic)
+                }
+            }
+        }
+        return readableCharacteristics
+    }
+
+    
+//    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+//        guard let services = peripheral.services, error == nil else {
+//            print("Error discovering services: \(error?.localizedDescription ?? "unknown error")")
+//            return
+//        }
+//
+//        for service in services {
+//            peripheral.discoverCharacteristics([CBUUID.temperatureCharacteristicUUID, CBUUID.humidityCharacteristicUUID, CBUUID.moistureCharacteristicUUID], for: service)
+//        }
+//    }
+//
+//    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+//        guard let characteristics = service.characteristics, error == nil else {
+//            print("Error discovering characteristics: \(error?.localizedDescription ?? "unknown error")")
+//            return
+//        }
+//        
+//        for characteristic in characteristics {
+//            print("Discovered Characteristic: \(characteristic.uuid)")
+//            switch characteristic.uuid {
+//            case CBUUID.temperatureCharacteristicUUID:
+//                print("Temperature characteristic discovered.")
+//            case CBUUID.humidityCharacteristicUUID:
+//                print("Humidity characteristic discovered.")
+//            case CBUUID.moistureCharacteristicUUID:
+//                print("Soil Moisture characteristic discovered.")
+//            default:
+//                print("Unhandled Characteristic UUID: \(characteristic.uuid)")
+//            }
+//        }
+//    }
+
 
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
@@ -389,7 +509,7 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
                 print("Could not convert data to Float for temperature")
             }
         case CBUUID.humidityCharacteristicUUID:
-            if let humidity = data.toInt() {
+            if let humidity = data.toUInt32AsInt() {
                 delegate?.didUpdateHumidity(humidity)
             } else {
                 print("Could not convert data to Int for humidity")
@@ -404,7 +524,30 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
             print("Unhandled Characteristic UUID: \(characteristic.uuid)")
         }
     }
-
+    
+//    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+//        guard let data = characteristic.value, error == nil else {
+//            print("Error reading characteristics: \(error?.localizedDescription ?? "No error information")")
+//            return
+//        }
+//
+//        switch characteristic.uuid {
+//        case CBUUID.temperatureCharacteristicUUID:
+//            if let temperature = data.toTemperature() {
+//                delegate?.didUpdateTemperature(temperature)
+//            }
+//        case CBUUID.humidityCharacteristicUUID:
+//            if let humidity = data.toInt() { // Ensure you have a conversion method like toTemperature
+//                delegate?.didUpdateHumidity(humidity)
+//            }
+//        case CBUUID.moistureCharacteristicUUID:
+//            if let moisture = data.toFloatLittleEndian() { // Ensure you have a conversion method
+//                delegate?.didUpdateSoilMoisture(moisture)
+//            }
+//        default:
+//            print("Unhandled Characteristic UUID: \(characteristic.uuid)")
+//        }
+//    }
 
 
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
@@ -467,12 +610,15 @@ extension Data {
         return Float(value) / 100.0
     }
     
-    func toInt() -> Int? {
-        guard count >= MemoryLayout<Int>.size else {
-            print("Data size is too small to convert to Int")
+    func toUInt32AsInt() -> Int? {
+        guard self.count >= MemoryLayout<UInt32>.size else {
+            print("Data size (\(self.count)) is too small to convert to UInt32")
             return nil
         }
-        return withUnsafeBytes { $0.load(as: Int.self) }
+        let value = self.withUnsafeBytes {
+            $0.load(as: UInt32.self).littleEndian // Assuming data is little-endian
+        }
+        return Int(value) // Convert UInt32 to Int
     }
 }
 
