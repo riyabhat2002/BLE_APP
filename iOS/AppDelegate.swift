@@ -45,7 +45,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Initialize the Bluetooth manager
-        bluetoothManager = BluetoothManager.shared
+//        bluetoothManager = BluetoothManager.shared
         
         // Set up the window and root view controller
         window = UIWindow(frame: UIScreen.main.bounds)

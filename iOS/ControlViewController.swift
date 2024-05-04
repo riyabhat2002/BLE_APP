@@ -169,7 +169,7 @@ class ControlViewController: UIViewController {
     }
 
     func addControls() {
-        let deviceNames = ["Grow Light", "Heat Light", "Fan", "Motor", "Misting System"]
+        let deviceNames = ["Heat Light", "Grow Light", "Fan", "Misting System", "Water Pump"]
         let commandValues = [0, 2, 4, 6, 8] // Starting command values for each device when turned on
 
         for (index, deviceName) in deviceNames.enumerated() {
